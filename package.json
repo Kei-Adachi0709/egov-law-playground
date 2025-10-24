@@ -17,7 +17,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "zustand": "^4.5.4"
+    "zustand": "^4.5.4",
+    "fast-xml-parser": "^4.4.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.5.0",
