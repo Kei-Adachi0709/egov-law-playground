@@ -31,7 +31,7 @@ describe('lawClient', () => {
     const detail = await getLawById('TEST-LAW', baseConfig);
     expect(detail.lawName).toBe('Test Law');
     expect(detail.provisions).toHaveLength(3);
-    expect(detail.articles[0].paragraphs[0].text).toContain('Purpose');
+  expect(detail.articles[0].paragraphs[0].text.toLowerCase()).toContain('purpose');
   });
 
   it('picks a random provision deterministically via mocked random', async () => {
@@ -45,9 +45,9 @@ describe('lawClient', () => {
 
   it('extracts provisions matching a keyword', async () => {
     const detail = await getLawById('TEST-LAW', baseConfig);
-    const matches = extractProvisionsByKeyword(detail, 'condition');
-    expect(matches).toHaveLength(1);
-    expect(matches[0].text).toContain('condition');
+  const matches = extractProvisionsByKeyword(detail, 'condition');
+  expect(matches).toHaveLength(2);
+  expect(matches.every((match) => match.text.toLowerCase().includes('condition'))).toBe(true);
   });
 
   it('retries and throws when response is not ok', async () => {

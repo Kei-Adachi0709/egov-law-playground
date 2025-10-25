@@ -10,7 +10,8 @@ import type {
 } from '../../types/law';
 
 const DEFAULT_BASE_URL = resolveDefaultBaseUrl();
-const DEFAULT_PROXY_BASE = '/api/proxy?target=';
+const DEFAULT_PROXY_BASE = resolveDefaultProxyBase();
+const DEFAULT_USE_PROXY = resolveDefaultProxyUsage();
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_RETRY_DELAY_MS = 300;
 
@@ -113,7 +114,8 @@ const buildRequestUrl = (
     });
   }
 
-  if (!config.useProxy) {
+  const useProxy = config.useProxy ?? DEFAULT_USE_PROXY;
+  if (!useProxy) {
     return url.toString();
   }
 
@@ -240,17 +242,46 @@ const shouldRetry = (status?: number): boolean => {
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 function resolveDefaultBaseUrl(): string {
-  const viteEnv = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: Record<string, string> }).env : undefined;
-  if (viteEnv?.VITE_EGOV_LAW_API_BASE_URL) {
-    return viteEnv.VITE_EGOV_LAW_API_BASE_URL;
-  }
+  const viteEnv = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: Record<string, string | undefined> }).env : undefined;
   const nodeProcess = (globalThis as typeof globalThis & {
     process?: { env?: Record<string, string | undefined> };
   }).process;
-  if (nodeProcess?.env?.VITE_EGOV_LAW_API_BASE_URL) {
-    return nodeProcess.env.VITE_EGOV_LAW_API_BASE_URL;
+  const candidates = [
+    viteEnv?.VITE_EGOV_LAW_API_BASE_URL,
+    viteEnv?.VITE_API_BASE_URL,
+    nodeProcess?.env?.VITE_EGOV_LAW_API_BASE_URL,
+    nodeProcess?.env?.VITE_API_BASE_URL
+  ];
+  for (const candidate of candidates) {
+    if (candidate) {
+      return candidate;
+    }
   }
   return 'https://www.e-gov.go.jp/elaws/api/v1/';
+}
+
+function resolveDefaultProxyBase(): string {
+  const viteEnv = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: Record<string, string | undefined> }).env : undefined;
+  const nodeProcess = (globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  }).process;
+  return (
+    viteEnv?.VITE_PROXY_BASE_URL ??
+    nodeProcess?.env?.VITE_PROXY_BASE_URL ??
+    '/api/proxy?target='
+  );
+}
+
+function resolveDefaultProxyUsage(): boolean {
+  const viteEnv = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: Record<string, string | undefined> }).env : undefined;
+  const nodeProcess = (globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  }).process;
+  const flag = viteEnv?.VITE_USE_PROXY ?? nodeProcess?.env?.VITE_USE_PROXY;
+  if (flag === undefined) {
+    return false;
+  }
+  return ['1', 'true', 'yes'].includes(flag.toLowerCase());
 }
 
 export type { LawClientConfig } from '../../types/law';

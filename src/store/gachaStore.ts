@@ -164,9 +164,10 @@ const creator = (
   }
 });
 
-export const createGachaStore = (storage?: StateStorage): StoreApi<GachaState> =>
+export const createGachaStore = (storage?: StateStorage) =>
   create<GachaState>()(
     persist<GachaState>(creator, createPersistOptions(storage))
   );
 
 export const useGachaStore = createGachaStore();
+export type GachaStore = ReturnType<typeof createGachaStore>;

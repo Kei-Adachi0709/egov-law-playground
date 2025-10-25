@@ -16,3 +16,7 @@ export const createId = () => {
 
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 };
+
+export { MAJOR_SIX_LAWS, pickUniqueRandom, pickWeightedRandom } from './random';
+export { highlightKeyword, highlightKeywords } from './highlight';
+export { persist } from './persist';

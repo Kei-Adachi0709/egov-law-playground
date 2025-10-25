@@ -16,9 +16,16 @@ const createMemoryStorage = (): StateStorage => {
   };
 };
 
+const createTestStore = () => {
+  const store = createGachaStore(createMemoryStorage());
+  const unsubscribe = store.subscribe(() => {});
+  return { store, unsubscribe } as const;
+};
+
 describe('gachaStore', () => {
   it('respects history limit when adding entries', () => {
-    const store = createGachaStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { setHistoryLimit, addHistory } = store.getState();
 
     setHistoryLimit(3);
@@ -35,11 +42,14 @@ describe('gachaStore', () => {
     expect(history).toHaveLength(3);
     expect(history[0].id).toBe('law-2');
     expect(history[2].id).toBe('law-4');
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it('toggles favorites based on entry id', () => {
-    const store = createGachaStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { toggleFavorite } = store.getState();
     const entry = {
       id: 'law-1',
@@ -52,11 +62,14 @@ describe('gachaStore', () => {
 
     toggleFavorite(entry);
     expect(store.getState().favorites).not.toHaveProperty('law-1');
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it('generates a readable share text with latest configuration', () => {
-    const store = createGachaStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { setCategories, setKeyword, addHistory, generateShareText } = store.getState();
 
     setCategories(['administration', 'environment']);
@@ -73,6 +86,8 @@ describe('gachaStore', () => {
     expect(shareText).toContain('Latest Law');
     expect(shareText).toContain('administration, environment');
     expect(shareText).toContain('climate');
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 });

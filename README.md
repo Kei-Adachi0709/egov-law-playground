@@ -61,14 +61,18 @@ src/
 
 ## 環境変数
 
-`.env.example` を `.env` にコピーして利用してください。
+`.env.example` を `.env` にコピーし、必要に応じて値を調整してください。
 
 ```
-VITE_API_BASE_URL=
+VITE_EGOV_LAW_API_BASE_URL=https://www.e-gov.go.jp/elaws/api/v1/
+VITE_USE_PROXY=true
+VITE_PROXY_BASE_URL=/api/proxy?target=
 VITE_FEATURE_GACHA=true
 VITE_FEATURE_QUIZ=true
 VITE_FEATURE_HUNTER=true
 ```
+
+開発時は Vite が `/api/proxy` へのアクセスを e-Gov API にフォワードします。本番環境は Netlify Functions（`netlify/functions/proxy.ts`）を利用して `/api/proxy` を提供する構成です。`netlify.toml` によるリダイレクト設定済みです。
 
 ## テスト
 

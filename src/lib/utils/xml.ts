@@ -3,22 +3,24 @@ import { XMLParser, type X2jOptionsOptional } from 'fast-xml-parser';
 const defaultParserOptions: X2jOptionsOptional = {
   ignoreAttributes: false,
   attributeNamePrefix: '',
-  textNodeName: 'value',
+  textNodeName: '#text',
   allowBooleanAttributes: true,
   trimValues: true,
   parseTagValue: true,
-  parseAttributeValue: true
+  parseAttributeValue: true,
+  ignoreDeclaration: false
 };
 
 const parserCache = new Map<string, XMLParser>();
 
 const getParser = (options?: X2jOptionsOptional): XMLParser => {
   const key = JSON.stringify(options ?? {});
-  if (!parserCache.has(key)) {
-    parserCache.set(key, new XMLParser({ ...defaultParserOptions, ...options }));
+  let parser = parserCache.get(key);
+  if (!parser) {
+    parser = new XMLParser({ ...defaultParserOptions, ...options });
+    parserCache.set(key, parser);
   }
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return parserCache.get(key)!;
+  return parser;
 };
 
 export const parseXmlToJson = <T>(xml: string, options?: X2jOptionsOptional): T => {
@@ -30,29 +32,92 @@ export const parseXmlToJson = <T>(xml: string, options?: X2jOptionsOptional): T 
   }
 };
 
-export const getValueAtPath = <T>(source: unknown, path: string[]): T | undefined => {
-  let current: unknown = source;
-  for (const segment of path) {
-    if (current === null || typeof current !== 'object') {
-      return undefined;
-    }
-    const keys = Object.keys(current as Record<string, unknown>);
-    const match = keys.find((key) => key === segment || key.toLowerCase() === segment.toLowerCase());
-    if (!match) {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[match];
+type PathSegment = string | number;
+type PathInput = string | readonly PathSegment[];
+
+const PATH_DELIMITER = '.';
+
+const isNumericSegment = (segment: PathSegment): segment is number =>
+  typeof segment === 'number' || (typeof segment === 'string' && /^\d+$/.test(segment));
+
+const normalizePath = (path: PathInput): PathSegment[] => {
+  if (Array.isArray(path)) {
+    return [...path];
   }
-  return current as T;
+
+  const raw = String(path);
+  if (!raw.includes(PATH_DELIMITER)) {
+    return [raw];
+  }
+
+  return raw
+    .split(PATH_DELIMITER)
+    .map<PathSegment>((segment) => (isNumericSegment(segment) ? Number(segment) : segment))
+    .filter((segment) => segment !== '');
 };
 
-export const getFirstMatchingKey = (source: unknown, candidates: string[]): unknown => {
+const resolveObjectKey = (target: Record<string, unknown>, segment: string): string | undefined => {
+  if (segment in target) {
+    return segment;
+  }
+  const lower = segment.toLowerCase();
+  return Object.keys(target).find((key) => key.toLowerCase() === lower);
+};
+
+export const getValueAtPath = <T>(source: unknown, path: PathInput, fallback?: T): T | undefined => {
+  const segments = normalizePath(path);
+  let current: unknown = source;
+
+  for (const segment of segments) {
+    if (current === null || current === undefined) {
+      return fallback;
+    }
+
+    if (Array.isArray(current)) {
+      const index = typeof segment === 'number' ? segment : Number(segment);
+      current = Number.isInteger(index) ? current[index] : undefined;
+      continue;
+    }
+
+    if (typeof current === 'object') {
+      const record = current as Record<string, unknown>;
+      const key = typeof segment === 'string' ? resolveObjectKey(record, segment) : String(segment);
+      if (!key || !(key in record)) {
+        return fallback;
+      }
+      current = record[key];
+      continue;
+    }
+
+    return fallback;
+  }
+
+  return (current as T) ?? fallback;
+};
+
+export const getFirstMatchingKey = (
+  source: unknown,
+  candidates: readonly string[],
+  { caseInsensitive = true }: { caseInsensitive?: boolean } = {}
+): unknown => {
   if (source === null || typeof source !== 'object') {
     return undefined;
   }
+
   const entries = Object.entries(source as Record<string, unknown>);
-  const match = entries.find(([key]) => candidates.some((candidate) => candidate.toLowerCase() === key.toLowerCase()));
-  return match ? match[1] : undefined;
+  for (const [key, value] of entries) {
+    for (const candidate of candidates) {
+      if (caseInsensitive) {
+        if (candidate.toLowerCase() === key.toLowerCase()) {
+          return value;
+        }
+      } else if (candidate === key) {
+        return value;
+      }
+    }
+  }
+
+  return undefined;
 };
 
 export const ensureArray = <T>(value: T | T[] | undefined | null): T[] => {
@@ -68,3 +133,5 @@ export const normalizeWhitespace = (value: string | undefined | null): string =>
   }
   return value.replace(/\s+/g, ' ').trim();
 };
+
+export const hasPath = (source: unknown, path: PathInput): boolean => getValueAtPath(source, path) !== undefined;

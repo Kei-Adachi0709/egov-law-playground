@@ -2,8 +2,10 @@
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "lib": ["ES2023", "DOM"],
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true

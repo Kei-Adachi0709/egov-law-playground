@@ -18,7 +18,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
     "zustand": "^4.5.4",
-    "fast-xml-parser": "^4.4.0"
+    "fast-xml-parser": "^4.4.0",
+    "framer-motion": "^10.18.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.5.0",
@@ -30,6 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "@vitejs/plugin-react": "^4.4.1",
+    "@netlify/functions": "^2.7.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",

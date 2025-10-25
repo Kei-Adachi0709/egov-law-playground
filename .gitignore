@@ -55,7 +55,8 @@ playwright-report/
 # CI / deployment / serverless
 .vercel/
 .netlify/
-netlify/functions/
+!netlify/functions/
+!netlify/functions/**
 .vercel_build_output/
 .vercel_cache/
 

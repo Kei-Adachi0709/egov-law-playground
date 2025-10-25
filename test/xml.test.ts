@@ -1,6 +1,6 @@
 /// <reference path="./vitest-globals.d.ts" />
 
-import { ensureArray, getFirstMatchingKey, getValueAtPath, normalizeWhitespace, parseXmlToJson } from '../src/lib/utils/xml';
+import { ensureArray, getFirstMatchingKey, getValueAtPath, hasPath, normalizeWhitespace, parseXmlToJson } from '../src/lib/utils/xml';
 
 const sampleXml = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
@@ -21,9 +21,19 @@ describe('xml utils', () => {
     expect(getValueAtPath(json, ['root', 'result', 'status'])).toBe(0);
   });
 
+  it('supports string based path navigation', () => {
+    const json = parseXmlToJson<Record<string, unknown>>(sampleXml);
+    expect(getValueAtPath(json, 'root.Result.Message')).toBe('OK');
+    expect(hasPath(json, 'root.Result.Status')).toBe(true);
+    expect(getValueAtPath(json, 'root.Result.Unknown', 'fallback')).toBe('fallback');
+  });
+
   it('finds first matching key', () => {
     const json = parseXmlToJson<Record<string, unknown>>(sampleXml);
-    const result = getFirstMatchingKey(json.root, ['message']);
+    const result = getFirstMatchingKey(
+      (json.root as Record<string, unknown> | undefined)?.Result,
+      ['message']
+    );
     expect(result).toBe('OK');
   });
 

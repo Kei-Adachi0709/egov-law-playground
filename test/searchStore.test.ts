@@ -18,9 +18,16 @@ const createMemoryStorage = (): StateStorage => {
   };
 };
 
+const createTestStore = () => {
+  const store = createSearchStore(createMemoryStorage());
+  const unsubscribe = store.subscribe(() => {});
+  return { store, unsubscribe } as const;
+};
+
 describe('searchStore', () => {
   it('keeps only the latest limited history entries', () => {
-    const store = createSearchStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { addHistory } = store.getState();
 
     for (let index = 0; index < SEARCH_HISTORY_LIMIT + 5; index += 1) {
@@ -31,11 +38,14 @@ describe('searchStore', () => {
     expect(store.getState().history.at(-1)?.params.keyword).toBe(
       `keyword-${SEARCH_HISTORY_LIMIT + 4}`
     );
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it('deduplicates history and keeps the latest timestamp', () => {
-    const store = createSearchStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { addHistory } = store.getState();
 
     vi.useFakeTimers();
@@ -50,11 +60,14 @@ describe('searchStore', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].params.keyword).toBe('administration');
     expect(entries[0].executedAt).not.toBe(firstTimestamp);
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it('resets pagination when search params change', () => {
-    const store = createSearchStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { setPage, setLastParams } = store.getState();
 
     setPage(5);
@@ -63,11 +76,14 @@ describe('searchStore', () => {
     setLastParams({ keyword: 'law' });
     expect(store.getState().page).toBe(1);
     expect(store.getState().lastParams?.keyword).toBe('law');
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it('ensures page size stays in an acceptable range', () => {
-    const store = createSearchStore(createMemoryStorage());
+    const { store, unsubscribe } = createTestStore();
+    try {
     const { setPage, setPageSize } = store.getState();
 
     setPage(3);
@@ -80,6 +96,8 @@ describe('searchStore', () => {
 
     setPageSize(500);
     expect(store.getState().pageSize).toBeLessThanOrEqual(100);
-    store.destroy();
+    } finally {
+      unsubscribe();
+    }
   });
 });
