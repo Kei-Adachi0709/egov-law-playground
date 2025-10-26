@@ -12,7 +12,7 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module'
   },
-  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'jsx-a11y'],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'jsx-a11y', 'playwright'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -39,5 +39,11 @@ module.exports = {
     ],
     'react/prop-types': 'off'
   },
+  overrides: [
+    {
+      files: ['e2e/**/*.ts'],
+      extends: ['plugin:playwright/recommended']
+    }
+  ],
   ignorePatterns: ['dist', 'node_modules', '.vite', 'coverage', 'scripts/setup.sh']
 };
