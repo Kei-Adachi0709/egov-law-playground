@@ -1,6 +1,8 @@
-import { XMLParser, type X2jOptionsOptional } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
-const defaultParserOptions: X2jOptionsOptional = {
+type XmlParserOptions = NonNullable<ConstructorParameters<typeof XMLParser>[0]>;
+
+const defaultParserOptions: XmlParserOptions = {
   ignoreAttributes: false,
   attributeNamePrefix: '',
   textNodeName: '#text',
@@ -13,17 +15,17 @@ const defaultParserOptions: X2jOptionsOptional = {
 
 const parserCache = new Map<string, XMLParser>();
 
-const getParser = (options?: X2jOptionsOptional): XMLParser => {
+const getParser = (options?: Partial<XmlParserOptions>): XMLParser => {
   const key = JSON.stringify(options ?? {});
   let parser = parserCache.get(key);
   if (!parser) {
-    parser = new XMLParser({ ...defaultParserOptions, ...options });
+  parser = new XMLParser({ ...defaultParserOptions, ...options });
     parserCache.set(key, parser);
   }
   return parser;
 };
 
-export const parseXmlToJson = <T>(xml: string, options?: X2jOptionsOptional): T => {
+export const parseXmlToJson = <T>(xml: string, options?: Partial<XmlParserOptions>): T => {
   try {
     return getParser(options).parse(xml) as T;
   } catch (error) {

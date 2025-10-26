@@ -166,7 +166,7 @@ const creator = (
 
 export const createGachaStore = (storage?: StateStorage) =>
   create<GachaState>()(
-    persist<GachaState>(creator, createPersistOptions(storage))
+    persist<GachaState, [], [], GachaPersistedState>(creator, createPersistOptions(storage))
   );
 
 export const useGachaStore = createGachaStore();

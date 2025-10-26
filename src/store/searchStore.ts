@@ -124,7 +124,7 @@ const creator = (
 
 export const createSearchStore = (storage?: StateStorage): StoreApi<SearchState> =>
   create<SearchState>()(
-    persist<SearchState>(creator, createPersistOptions(storage))
+    persist<SearchState, [], [], SearchPersistedState>(creator, createPersistOptions(storage))
   );
 
 export const useSearchStore = createSearchStore();

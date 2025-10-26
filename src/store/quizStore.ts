@@ -167,7 +167,7 @@ const creator = (
 
 export const createQuizStore = (storage?: StateStorage) =>
   create<QuizState>()(
-    persist<QuizState>(creator, createPersistOptions(storage))
+    persist<QuizState, [], [], QuizPersistedState>(creator, createPersistOptions(storage))
   );
 
 export const useQuizStore = createQuizStore();
