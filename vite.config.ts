@@ -46,8 +46,9 @@ const filterHeaders = (headers: Record<string, string | string[] | undefined> | 
 const devProxyPlugin = {
   name: 'dev-egov-proxy',
   configureServer(server: { middlewares: { use: (path: string, handler: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void } }) {
-    server.middlewares.use('/api/proxy', async (req, res) => {
-      try {
+    server.middlewares.use('/api/proxy', (req, res) => {
+      void (async () => {
+        try {
         if ((req.method ?? 'GET').toUpperCase() === 'OPTIONS') {
           res.statusCode = 204;
           res.setHeader('Access-Control-Allow-Origin', '*');
@@ -88,10 +89,11 @@ const devProxyPlugin = {
 
         const upstreamBody = Buffer.from(await upstreamResponse.arrayBuffer());
         res.end(upstreamBody);
-      } catch (error) {
-        res.statusCode = 502;
-        res.end(error instanceof Error ? error.message : 'Proxy request failed.');
-      }
+        } catch (error) {
+          res.statusCode = 502;
+          res.end(error instanceof Error ? error.message : 'Proxy request failed.');
+        }
+      })();
     });
   }
 };

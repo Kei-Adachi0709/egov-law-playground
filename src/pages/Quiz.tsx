@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { Loading } from '../components/Loading';
 import { QuizCard } from '../components/QuizCard';
-import type { QuizDifficulty, QuizQuestion } from '../types';
+import type { QuizDifficulty } from '../types';
 import { QUIZ_CATEGORIES, type QuizCategory } from '../lib/utils/quizBank';
 import {
   ensureValidQuestion,

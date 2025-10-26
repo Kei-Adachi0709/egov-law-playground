@@ -1,11 +1,11 @@
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const randomFromArray = <T>(items: readonly T[]): T => {
+export const randomFromArray = <T>(items: readonly T[], random: () => number = Math.random): T => {
   if (!items.length) {
     throw new Error('Cannot pick from an empty array');
   }
 
-  const index = Math.floor(Math.random() * items.length);
+  const index = Math.floor(random() * items.length);
   return items[index];
 };
 

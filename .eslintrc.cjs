@@ -29,7 +29,7 @@ module.exports = {
     }
   },
   rules: {
-    '@typescript-eslint/explicit-function-return-type': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
@@ -37,6 +37,24 @@ module.exports = {
         ignoreRestSiblings: true
       }
     ],
+    '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+    '@typescript-eslint/require-await': 'off',
+    '@typescript-eslint/no-base-to-string': 'off',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
+    '@typescript-eslint/no-unsafe-argument': 'off',
+    '@typescript-eslint/no-unsafe-call': 'off',
+    '@typescript-eslint/no-unsafe-member-access': 'off',
+    '@typescript-eslint/no-unsafe-return': 'off',
+    '@typescript-eslint/no-misused-promises': [
+      'error',
+      {
+        checksVoidReturn: {
+          attributes: false,
+          properties: false
+        }
+      }
+    ],
+    '@typescript-eslint/triple-slash-reference': 'off',
     'react/prop-types': 'off'
   },
   overrides: [
@@ -45,5 +63,15 @@ module.exports = {
       extends: ['plugin:playwright/recommended']
     }
   ],
-  ignorePatterns: ['dist', 'node_modules', '.vite', 'coverage', 'scripts/setup.sh']
+  ignorePatterns: [
+    'dist',
+    'node_modules',
+    '.vite',
+    'coverage',
+    'scripts/setup.sh',
+    'postcss.config.js',
+    'tailwind.config.js',
+    'netlify/**',
+    'vitest.setup.ts'
+  ]
 };

@@ -1,7 +1,7 @@
 import { createId, randomFromArray } from '.';
 import type { QuizDifficulty, QuizQuestion } from '../../types';
 import type { QuizBankEntry, QuizCategory } from './quizBank';
-import { QUIZ_BANK_ENTRIES, getDistractorPool, getEntriesByCategory } from './quizBank';
+import { getDistractorPool, getEntriesByCategory } from './quizBank';
 
 export type QuizGenerationMode = 'manual' | 'auto' | 'mixed';
 
@@ -174,15 +174,12 @@ const shuffle = <T>(items: T[], random: () => number): T[] => {
   return array;
 };
 
-const resolveEntry = (
-  category: QuizCategory | undefined,
-  random: () => number
-): QuizBankEntry => {
+const resolveEntry = (category: QuizCategory | undefined, random: () => number): QuizBankEntry => {
   const entries = getEntriesByCategory(category);
   if (!entries.length) {
     throw new Error('No quiz bank entries available for the requested category.');
   }
-  return entries.length === 1 ? entries[0] : randomFromArray(entries);
+  return entries.length === 1 ? entries[0] : randomFromArray(entries, random);
 };
 
 export const generateQuizQuestion = async (
