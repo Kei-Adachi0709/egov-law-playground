@@ -54,6 +54,6 @@ const fulfillWithXml = async (route: Route, body: string) => {
 };
 
 export const setupLawApiMocks = async (page: Page): Promise<void> => {
-  await page.route('**/elaws/api/v1/laws/search**', (route) => fulfillWithXml(route, SEARCH_RESPONSE));
   await page.route('**/elaws/api/v1/laws/**', (route) => fulfillWithXml(route, DETAIL_RESPONSE));
+  await page.route('**/elaws/api/v1/laws/search**', (route) => fulfillWithXml(route, SEARCH_RESPONSE));
 };

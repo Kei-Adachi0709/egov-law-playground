@@ -15,7 +15,7 @@ const PARAGRAPH_TEXT_KEYS = ['ParagraphSentence', 'paragraphSentence', 'Paragrap
 const ITEM_KEYS = ['Item', 'item'];
 const ITEM_NUMBER_KEYS = ['ItemNumber', 'itemNumber', 'ItemNum', 'itemNum'];
 const ITEM_TEXT_KEYS = ['ItemSentence', 'itemSentence', 'ItemText', 'itemText'];
-const SENTENCE_KEYS = ['Sentence', 'sentence'];
+const SENTENCE_KEYS = ['Sentence', 'sentence', 'text', '#text'];
 
 export const transformLawBody = (lawId: string, lawBody: unknown): LawBodyTransformResult => {
   const articlesRaw = ensureArray(getFirstMatchingKey(lawBody, ARTICLE_KEYS));
