@@ -1,9 +1,8 @@
-// @ts-nocheck
-
 import type { Handler } from '@netlify/functions';
 
 const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://www.e-gov.go.jp/elaws/api/v1/';
 const allowedHosts = new Set<string>([new URL(DEFAULT_TARGET).host]);
+const proxyOrigin = process.env.PROXY_ORIGIN;
 
 const rawExtraHosts = process.env.EGOV_ALLOWED_PROXY_HOSTS ?? '';
 rawExtraHosts
@@ -13,7 +12,7 @@ rawExtraHosts
   .forEach((host) => allowedHosts.add(host));
 
 const buildCorsHeaders = (origin?: string): Record<string, string> => ({
-  'Access-Control-Allow-Origin': origin ?? '*',
+  'Access-Control-Allow-Origin': proxyOrigin ?? origin ?? '*',
   'Access-Control-Allow-Credentials': 'true'
 });
 
@@ -104,6 +103,7 @@ const handler: Handler = async (event) => {
       isBase64Encoded: true
     };
   } catch (error) {
+    console.error('[Hourei] Netlify proxy failed', error);
     return {
       statusCode: 502,
       headers: buildCorsHeaders(originHeader),

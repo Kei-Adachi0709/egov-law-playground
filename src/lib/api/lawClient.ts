@@ -1,5 +1,7 @@
 import { transformLawBody } from '../utils/lawParser';
 import { ensureArray, getFirstMatchingKey, normalizeWhitespace, parseXmlToJson } from '../utils/xml';
+import { getCachedValue, setCachedValue } from '../utils/cache';
+import { logError, logInfo } from '../utils/logger';
 import type {
   LawClientConfig,
   LawDetail,
@@ -14,6 +16,10 @@ const DEFAULT_PROXY_BASE = resolveDefaultProxyBase();
 const DEFAULT_USE_PROXY = resolveDefaultProxyUsage();
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_RETRY_DELAY_MS = 300;
+const DEFAULT_SEARCH_CACHE_TTL_MS = 1000 * 60 * 5;
+const DEFAULT_DETAIL_CACHE_TTL_MS = 1000 * 60 * 15;
+const SEARCH_CACHE_NAMESPACE = 'law-search';
+const DETAIL_CACHE_NAMESPACE = 'law-detail';
 
 export class LawApiError extends Error {
   constructor(message: string, public readonly status?: number, public readonly cause?: unknown) {
@@ -26,18 +32,90 @@ export const searchLaws = async (
   params: SearchParams,
   config: LawClientConfig = {}
 ): Promise<LawsSearchResult> => {
-  const xml = await fetchXml('laws/search', params as Record<string, unknown>, config);
-  const json = parseXmlToJson<Record<string, unknown>>(xml);
-  return normalizeSearchResult(json);
+  const loggerContext = config.loggerContext ?? 'law-client';
+  const cacheKey = buildCacheKey('search', params);
+  const cacheStrategy = config.cacheStrategy ?? 'session';
+  const cacheEnabled = !config.disableCache;
+
+  if (cacheEnabled) {
+    const cached = await getCachedValue<LawsSearchResult>(cacheKey, {
+      namespace: SEARCH_CACHE_NAMESPACE,
+      strategy: cacheStrategy
+    });
+    if (cached) {
+      logInfo('Search cache hit', { cacheKey }, loggerContext);
+      return cached;
+    }
+  }
+
+  const start = Date.now();
+  try {
+    const xml = await fetchXml('laws/search', params as Record<string, unknown>, config);
+    const json = parseXmlToJson<Record<string, unknown>>(xml);
+    const normalized = normalizeSearchResult(json);
+    const enriched: LawsSearchResult = {
+      ...normalized,
+      executionTimeMs: Date.now() - start,
+      query: params
+    };
+
+    if (cacheEnabled) {
+      await setCachedValue(cacheKey, enriched, {
+        namespace: SEARCH_CACHE_NAMESPACE,
+        strategy: cacheStrategy,
+        ttlMs: config.searchCacheTtlMs ?? DEFAULT_SEARCH_CACHE_TTL_MS
+      });
+    }
+
+    logInfo('Search request executed', { cacheKey, durationMs: enriched.executionTimeMs }, loggerContext);
+    return enriched;
+  } catch (error) {
+    logError('Search request failed', { cacheKey, params, error }, loggerContext);
+    throw error;
+  }
 };
 
 export const getLawById = async (
   lawId: string,
   config: LawClientConfig = {}
 ): Promise<LawDetail> => {
-  const xml = await fetchXml(`laws/${encodeURIComponent(lawId)}`, undefined, config);
-  const json = parseXmlToJson<Record<string, unknown>>(xml);
-  return normalizeLawDetail(json);
+  const loggerContext = config.loggerContext ?? 'law-client';
+  const cacheKey = buildCacheKey('detail', { lawId });
+  const cacheStrategy = config.detailCacheStrategy ?? config.cacheStrategy ?? 'indexedDB';
+  const cacheEnabled = !config.disableCache;
+
+  if (cacheEnabled) {
+    const cached = await getCachedValue<LawDetail>(cacheKey, {
+      namespace: DETAIL_CACHE_NAMESPACE,
+      strategy: cacheStrategy
+    });
+    if (cached) {
+      logInfo('Detail cache hit', { cacheKey, lawId }, loggerContext);
+      return cached;
+    }
+  }
+
+  const start = Date.now();
+  try {
+    const xml = await fetchXml(`laws/${encodeURIComponent(lawId)}`, undefined, config);
+    const json = parseXmlToJson<Record<string, unknown>>(xml);
+    const detail = normalizeLawDetail(json);
+    const elapsed = Date.now() - start;
+
+    if (cacheEnabled) {
+      await setCachedValue(cacheKey, detail, {
+        namespace: DETAIL_CACHE_NAMESPACE,
+        strategy: cacheStrategy,
+        ttlMs: config.detailCacheTtlMs ?? DEFAULT_DETAIL_CACHE_TTL_MS
+      });
+    }
+
+    logInfo('Detail request executed', { cacheKey, lawId, durationMs: elapsed }, loggerContext);
+    return detail;
+  } catch (error) {
+    logError('Detail request failed', { cacheKey, lawId, error }, loggerContext);
+    throw error;
+  }
 };
 
 export const pickRandomProvision = async (lawDetail: LawDetail): Promise<Provision> => {
@@ -71,6 +149,7 @@ const fetchXml = async (
   const maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
   const retryDelayMs = config.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
   const url = buildRequestUrl(endpoint, params, config);
+  const loggerContext = config.loggerContext ?? 'law-client';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -81,21 +160,27 @@ const fetchXml = async (
           await delay(retryDelayMs * 2 ** attempt);
           continue;
         }
-        throw new LawApiError(message, response.status);
+        const error = new LawApiError(message, response.status);
+        logError('Law API responded with error', { endpoint, url, status: response.status }, loggerContext);
+        throw error;
       }
       return await response.text();
     } catch (error) {
       if (attempt >= maxRetries) {
         if (error instanceof LawApiError) {
+          logError('Law API request exhausted retries', { endpoint, url, error }, loggerContext);
           throw error;
         }
+        logError('Law API request failed', { endpoint, url, error }, loggerContext);
         throw new LawApiError('Law API request failed', undefined, error);
       }
       await delay(retryDelayMs * 2 ** attempt);
     }
   }
 
-  throw new LawApiError('Law API request exhausted retries.');
+  const finalError = new LawApiError('Law API request exhausted retries.');
+  logError('Law API retry budget exceeded', { endpoint, url }, loggerContext);
+  throw finalError;
 };
 
 const buildRequestUrl = (
@@ -161,6 +246,27 @@ const normalizeSearchResult = (json: Record<string, unknown>): LawsSearchResult 
     message,
     results
   };
+};
+
+const buildCacheKey = (prefix: string, params: unknown): string =>
+  `${prefix}:${stableStringify(params)}`;
+
+const stableStringify = (value: unknown): string => {
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
+  }
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries
+    .map(([key, val]) => `${JSON.stringify(key)}:${stableStringify(val)}`)
+    .join(',')}}`;
 };
 
 const normalizeLawDetail = (json: Record<string, unknown>): LawDetail => {

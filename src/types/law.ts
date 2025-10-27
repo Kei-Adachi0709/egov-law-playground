@@ -115,4 +115,10 @@ export interface LawClientConfig {
   fetchImpl?: typeof fetch;
   maxRetries?: number;
   retryDelayMs?: number;
+  disableCache?: boolean;
+  cacheStrategy?: 'session' | 'indexedDB' | 'memory';
+  detailCacheStrategy?: 'session' | 'indexedDB' | 'memory';
+  searchCacheTtlMs?: number;
+  detailCacheTtlMs?: number;
+  loggerContext?: string;
 }

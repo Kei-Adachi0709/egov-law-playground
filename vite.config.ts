@@ -102,5 +102,34 @@ export default defineConfig({
   plugins: [react(), devProxyPlugin],
   server: {
     port: 5173
+  },
+  build: {
+    sourcemap: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            if (id.includes('zustand')) {
+              return 'state';
+            }
+            if (id.includes('fast-xml-parser')) {
+              return 'xml';
+            }
+            return 'vendor';
+          }
+          if (id.includes('src/pages/')) {
+            const match = id.match(/src\\pages\\([A-Za-z0-9]+)/) ?? id.match(/src\/pages\/([A-Za-z0-9]+)/);
+            if (match?.[1]) {
+              return `page-${match[1].toLowerCase()}`;
+            }
+          }
+          return undefined;
+        }
+      }
+    }
   }
 });

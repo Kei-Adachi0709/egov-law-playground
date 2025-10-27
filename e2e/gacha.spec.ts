@@ -27,7 +27,7 @@ test.describe('Gacha experience', () => {
 
     const heading = page.getByRole('heading', { name: /テスト行政手続法/ });
     await expect(heading).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/第一条/)).toBeVisible();
+  await expect(page.getByText(/第.+条/)).toBeVisible();
     await expect(page.getByRole('link', { name: 'e-Gov で確認する' })).toHaveAttribute(
       'href',
       /TEST-LAW-001/

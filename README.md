@@ -22,7 +22,7 @@ React + TypeScript + Vite をベースに、電子政府の法令データを扱
 - `npm run format` : Prettier でコードを整形します。
 - `npm run test` : Vitest による単体テストを実行します。
 - `npm run test:watch` : テストをウォッチモードで実行します。
-- `npm run test:e2e` : Playwright 導入前のプレースホルダーです。
+- `npm run test:e2e` : Playwright の E2E テストを実行します。
 
 ## ディレクトリ構成
 
@@ -65,14 +65,32 @@ src/
 
 ```
 VITE_EGOV_LAW_API_BASE_URL=https://www.e-gov.go.jp/elaws/api/v1/
+VITE_API_BASE_URL=https://www.e-gov.go.jp/elaws/api/v1/
 VITE_USE_PROXY=true
 VITE_PROXY_BASE_URL=/api/proxy?target=
+PROXY_ORIGIN=
 VITE_FEATURE_GACHA=true
 VITE_FEATURE_QUIZ=true
 VITE_FEATURE_HUNTER=true
 ```
 
-開発時は Vite が `/api/proxy` へのアクセスを e-Gov API にフォワードします。本番環境は Netlify Functions（`netlify/functions/proxy.ts`）を利用して `/api/proxy` を提供する構成です。`netlify.toml` によるリダイレクト設定済みです。
+`PROXY_ORIGIN` を設定すると、Functions が `Access-Control-Allow-Origin` に指定値を返すようになります（空欄の場合は `*`）。開発時は Vite が `/api/proxy` へのアクセスをローカルでフォワードします。本番環境では `/api/proxy` を Functions 経由で提供します（Netlify: `netlify/functions/proxy.ts`, Vercel: `api/proxy.ts`）。
+
+## デプロイ
+
+### Netlify
+
+1. `npm run build` をビルドコマンド、`dist` を公開ディレクトリとして設定します。
+2. Functions ディレクトリに `netlify/functions` を指定します（`netlify.toml` に定義済み）。
+3. 環境変数に `VITE_API_BASE_URL`、`VITE_EGOV_LAW_API_BASE_URL`、`VITE_USE_PROXY`、`VITE_PROXY_BASE_URL`、`PROXY_ORIGIN` などを登録します。
+
+### Vercel
+
+1. `vercel.json` の設定に従い `npm run build` をビルドコマンドとして利用します。
+2. API Routes 配下の `api/proxy.ts` を Serverless Function としてデプロイします。
+3. Vercel の Environment Variables に Netlify 同様の値を登録します（`PROXY_ORIGIN` は許可したいオリジンを指定）。
+
+両プラットフォームとも `npm run lint` および `npm run test:e2e` が CI に組み込まれていることを前提としています。
 
 ## テスト
 

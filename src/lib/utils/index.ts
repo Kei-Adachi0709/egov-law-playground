@@ -20,3 +20,5 @@ export const createId = () => {
 export { MAJOR_SIX_LAWS, pickUniqueRandom, pickWeightedRandom } from './random';
 export { highlightKeyword, highlightKeywords } from './highlight';
 export { persist } from './persist';
+export { getCachedValue, setCachedValue, invalidateCacheKey } from './cache';
+export { logError, logInfo, logWarn, registerLogListener } from './logger';
