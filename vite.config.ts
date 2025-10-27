@@ -99,6 +99,11 @@ const devProxyPlugin = {
 };
 
 export default defineConfig({
+  // Use a relative base so built asset URLs are relative (./assets/...) which
+  // works when the site is served from a subpath or via a file-based deploy.
+  // This avoids absolute "/assets/..." references that cause 404s under Apache
+  // when the DocumentRoot isn't the site root.
+  base: './',
   plugins: [react(), devProxyPlugin],
   server: {
     port: 5173
