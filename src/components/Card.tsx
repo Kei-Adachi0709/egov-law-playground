@@ -1,4 +1,4 @@
-import { forwardRef, type PropsWithChildren, type ReactNode } from 'react';
+import { forwardRef, useId, type PropsWithChildren, type ReactNode } from 'react';
 import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
 
 import { Stack } from './Stack';
@@ -16,7 +16,7 @@ export const Card = forwardRef<HTMLElement, PropsWithChildren<CardProps>>(
       title,
       actions,
       className = '',
-      contentClassName = 'px-6 py-5',
+      contentClassName = 'px-6 py-5 space-y-4 text-[15px] leading-relaxed',
       children,
       initial,
       animate,
@@ -28,6 +28,10 @@ export const Card = forwardRef<HTMLElement, PropsWithChildren<CardProps>>(
   ) => {
     const prefersReducedMotion = useReducedMotion();
     const shouldAnimate = !prefersReducedMotion;
+    const headingId = useId();
+    const accessibilityProps = title
+      ? ({ role: 'region', 'aria-labelledby': headingId } as const)
+      : undefined;
 
     const resolvedInitial = shouldAnimate ? initial ?? { opacity: 0, y: 12 } : initial;
     const resolvedAnimate = shouldAnimate ? animate ?? { opacity: 1, y: 0 } : animate;
@@ -44,12 +48,18 @@ export const Card = forwardRef<HTMLElement, PropsWithChildren<CardProps>>(
         animate={resolvedAnimate}
         exit={resolvedExit}
         transition={resolvedTransition}
+        {...accessibilityProps}
         {...rest}
       >
         {(title || actions) && (
           <header className="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
             <Stack direction="row" align="center" justify="between" className="gap-3">
-              <div className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</div>
+              <div
+                id={headingId}
+                className="text-base font-semibold text-slate-900 dark:text-slate-100"
+              >
+                {title}
+              </div>
               {actions}
             </Stack>
           </header>

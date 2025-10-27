@@ -93,6 +93,7 @@ export const GachaPage = () => {
   const settings = useGachaStore((state: GachaState) => state.settings);
   const setCategories = useGachaStore((state: GachaState) => state.setCategories);
   const setKeyword = useGachaStore((state: GachaState) => state.setKeyword);
+  const generateShareText = useGachaStore((state: GachaState) => state.generateShareText);
 
   const keywordCheckboxId = useId();
   const keywordInputId = useId();
@@ -293,11 +294,11 @@ export const GachaPage = () => {
     }
 
     const citeUrl = buildCiteUrl(result.law.lawId);
-    const baseText = `${result.law.lawName} ${result.provision.path}`;
+    const shareText = generateShareText();
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title: result.law.lawName, text: baseText, url: citeUrl });
+        await navigator.share({ title: result.law.lawName, text: shareText, url: citeUrl });
         return;
       } catch (shareError) {
         if ((shareError as { name?: string })?.name === 'AbortError') {
@@ -307,12 +308,12 @@ export const GachaPage = () => {
     }
 
     const tweetUrl = new URL('https://twitter.com/intent/tweet');
-    tweetUrl.searchParams.set('text', `${baseText} #法令ガチャ`);
+    tweetUrl.searchParams.set('text', shareText);
     tweetUrl.searchParams.set('url', citeUrl);
     if (typeof window !== 'undefined') {
       window.open(tweetUrl.toString(), '_blank', 'noopener,noreferrer');
     }
-  }, [result]);
+  }, [generateShareText, result]);
 
   const isFavorite = useMemo(() => {
     if (!result) {
@@ -332,7 +333,9 @@ export const GachaPage = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">カテゴリー</h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">未選択の場合は推奨カテゴリーから抽選</span>
+            <span className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              未選択の場合は推奨カテゴリーから抽選
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {CATEGORY_OPTIONS.map((option) => {
@@ -373,7 +376,9 @@ export const GachaPage = () => {
               />
               キーワードを含む条文ガチャ
             </label>
-            <span className="text-xs text-slate-500 dark:text-slate-400">例: 個人情報 / 金融 / 環境 など</span>
+            <span className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              例: 個人情報 / 金融 / 環境 など
+            </span>
           </div>
           <input
             id={keywordInputId}
@@ -387,7 +392,11 @@ export const GachaPage = () => {
         </div>
 
         <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/60">
-          <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+          <div
+            className="flex items-center gap-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+            role="status"
+            aria-live="polite"
+          >
             {isLoading ? (
               <>
                 <svg

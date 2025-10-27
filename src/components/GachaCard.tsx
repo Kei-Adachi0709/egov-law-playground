@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 
 import { Button } from './Button';
 import { Stack } from './Stack';
@@ -26,10 +26,13 @@ const formatDateTime = (iso: string) => {
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-  return new Intl.DateTimeFormat('ja-JP', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(date);
+  return {
+    display: new Intl.DateTimeFormat('ja-JP', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(date),
+    iso: date.toISOString()
+  };
 };
 
 export const GachaCard = ({
@@ -52,6 +55,7 @@ export const GachaCard = ({
   const provisionHtml = useMemo(() => ({ __html: provisionText }), [provisionText]);
   const prefersReducedMotion = useReducedMotion();
   const shouldAnimate = !prefersReducedMotion;
+  const metadataLabelId = useId();
 
   const favoriteLabel = isFavorite ? 'お気に入りから削除' : 'お気に入りに追加';
 
@@ -69,31 +73,46 @@ export const GachaCard = ({
         <header>
           <Stack gap="3">
             <Stack
+              id={metadataLabelId}
               direction="row"
               wrap
               align="center"
-              className="gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+              className="gap-3 text-[13px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+              aria-label="条文メタデータ"
             >
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+              <span className="rounded-full bg-blue-600 px-3 py-1 text-white shadow-sm dark:bg-blue-500">
                 {categoryLabel}
               </span>
               {keyword ? (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
+                <span className="rounded-full bg-emerald-600 px-3 py-1 text-white shadow-sm dark:bg-emerald-500">
                   キーワード: {keyword}
                 </span>
               ) : null}
-              {lawType ? <span>{lawType}</span> : null}
-              {formattedDate ? <span>{formattedDate}</span> : null}
+              {lawType ? <span className="text-slate-700 dark:text-slate-200">{lawType}</span> : null}
+              {formattedDate ? (
+                <time
+                  dateTime={formattedDate.iso}
+                  className="text-slate-700 dark:text-slate-200"
+                >
+                  {formattedDate.display}
+                </time>
+              ) : null}
             </Stack>
-            <h1 className="text-2xl font-bold leading-tight text-slate-900 dark:text-slate-100">{lawName}</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
+              {lawName}
+            </h1>
+            <p className="text-[15px] leading-relaxed text-slate-600 dark:text-slate-300">
               {provisionPath}
               {lawNumber ? ` ・ ${lawNumber}` : null}
             </p>
           </Stack>
         </header>
 
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-5 text-slate-800 shadow-inner dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100">
+        <div
+          className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-5 text-slate-800 shadow-inner dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100"
+          role="region"
+          aria-labelledby={metadataLabelId}
+        >
           <article
             className="prose prose-sm max-w-none prose-neutral dark:prose-invert [&_mark]:rounded-[0.35rem] [&_mark]:bg-amber-200/60 [&_mark]:px-0.5 [&_mark]:py-0"
             dangerouslySetInnerHTML={provisionHtml}
@@ -101,7 +120,7 @@ export const GachaCard = ({
         </div>
 
         <footer>
-          <Stack direction="row" wrap align="center" justify="between" className="gap-4">
+          <Stack direction="row" wrap align="center" justify="between" className="gap-4 text-[15px] leading-relaxed">
             <Stack direction="row" wrap className="gap-3">
               <Button
                 type="button"
@@ -123,12 +142,17 @@ export const GachaCard = ({
                 }`}
               >
                 {favoriteLabel}
+                <span className="sr-only" aria-live="polite">
+                  {isFavorite ? 'お気に入りに登録済み' : 'お気に入りから除外'}
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={onShare}
                 className="h-11 px-5 text-base"
+                aria-label={`${lawName} を共有`}
+                title="条文を共有"
               >
                 この条文をシェア
               </Button>
@@ -137,7 +161,8 @@ export const GachaCard = ({
               href={citeUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center text-sm font-semibold text-primary underline-offset-2 hover:underline"
+              className="inline-flex items-center justify-center rounded-full border border-primary/30 px-4 py-2 text-sm font-semibold text-primary underline-offset-4 transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+              aria-label={`${lawName} を e-Gov で開く`}
             >
               e-Gov で確認する
             </a>

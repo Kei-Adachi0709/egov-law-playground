@@ -82,6 +82,20 @@ VITE_FEATURE_HUNTER=true
 3. Vercel の Environment Variables に `.env` と同じ設定を反映します。
 4. Playwright E2E や Unit テストを CI に組み込む場合は、Vercel Projects の「Settings > Git > Install Command / Build Command」で `npm run test` 等を組み合わせて実行してください。
 
+## Lighthouse 計測メモ
+
+90 点以上のスコアを維持するため、開発ローカルで定期的に Lighthouse を計測します。
+
+1. `npm run build`
+2. 別ターミナルで `npm run preview` を実行し、`http://localhost:4173` を公開
+3. 計測ターミナルで以下を実行します
+   ```bash
+   npx @lhci/cli autorun --config=./lighthouserc.json
+   ```
+4. レポートは `.lighthouseci/` に保存され、主要カテゴリ（Performance / Accessibility / Best Practices / SEO）が 0.90 以上であることを確認してください。
+
+`lighthouserc.json` にはデスクトップ向けプリセットと主要ページの URL を定義しています。必要に応じて測定対象ページや閾値を調整してください。
+
 ## スクリーンショット（ダミー）
 
 差し替え用のダミー画像配置例です。`docs/screenshots` 配下に PNG や WebP を置き、以下リンクを更新してください。

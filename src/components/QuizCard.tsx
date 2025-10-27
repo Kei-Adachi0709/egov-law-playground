@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useId, useMemo, type KeyboardEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import type { QuizDifficulty, QuizQuestion } from '../types';
@@ -104,24 +104,73 @@ export const QuizCard = memo(
       ? { idle: { scale: 1, x: 0 }, correct: { scale: 1, x: 0 }, incorrect: { scale: 1, x: 0 } }
       : activeStatusVariants;
     const resolvedStatus = prefersReducedMotion ? 'idle' : status;
+      const promptId = useId();
+      const choiceGroupId = useId();
+      const helpTextId = useId();
+      const feedbackId = useId();
+      const totalChoices = question.choices.length;
+      const describedByIds = [helpTextId];
+      if (feedback) {
+        describedByIds.push(feedbackId);
+      }
+
+      const handleChoiceKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+          if (disableInteraction || reveal) {
+            return;
+          }
+          if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            onSelect(index);
+            return;
+          }
+
+          const advanceKeys = ['ArrowRight', 'ArrowDown'];
+          const retreatKeys = ['ArrowLeft', 'ArrowUp'];
+          let nextIndex: number | null = null;
+
+          if (advanceKeys.includes(event.key)) {
+            nextIndex = (index + 1) % totalChoices;
+          } else if (retreatKeys.includes(event.key)) {
+            nextIndex = (index - 1 + totalChoices) % totalChoices;
+          }
+
+          if (nextIndex === null) {
+            return;
+          }
+
+          event.preventDefault();
+          const group = event.currentTarget.closest('[data-quiz-options="true"]');
+          const targets = group?.querySelectorAll<HTMLButtonElement>('button[role="radio"]');
+          const next = targets?.item(nextIndex);
+          next?.focus();
+          onSelect(nextIndex);
+        },
+        [disableInteraction, onSelect, reveal, totalChoices]
+      );
 
     return (
       <motion.article
-        className="flex h-full flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          className="flex h-full flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900"
         variants={variants}
         animate={resolvedStatus}
         transition={
           prefersReducedMotion ? undefined : { type: 'spring', damping: 16, stiffness: 220, mass: 0.8 }
         }
       >
-        <Stack direction="row" wrap align="start" justify="between" className="gap-3">
-          <Stack gap="1">
+          <Stack direction="row" wrap align="start" justify="between" className="gap-3">
+            <Stack gap="1">
             {progressLabel && (
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 {progressLabel}
               </span>
             )}
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{question.prompt}</h2>
+              <h2
+                id={promptId}
+                className="text-lg font-semibold leading-relaxed text-slate-900 dark:text-slate-100"
+              >
+                {question.prompt}
+              </h2>
           </Stack>
           <Stack direction="row" align="center" className="gap-2 text-xs">
             {question.metadata?.category && (
@@ -156,7 +205,20 @@ export const QuizCard = memo(
           </p>
         )}
 
-        <ul className="grid gap-3">
+        <p id={helpTextId} className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          {keyboardHints
+            ? '矢印キーで選択肢を移動し、Enter またはスペースで回答を確定できます。1〜4 のショートカットにも対応しています。'
+            : '矢印キーかタブで選択肢を移動し、Enter またはスペースで回答してください。'}
+        </p>
+
+        <ul
+          id={choiceGroupId}
+          className="grid gap-3"
+          role="radiogroup"
+          aria-labelledby={promptId}
+          aria-describedby={describedByIds.join(' ')}
+          data-quiz-options="true"
+        >
           {question.choices.map((choice, index) => {
             const isSelected = selectedIndex === index;
             const tone = getChoiceTone(reveal, question.answerIndex, index, isSelected);
@@ -165,8 +227,12 @@ export const QuizCard = memo(
                 <button
                   type="button"
                   onClick={() => onSelect(index)}
+                  onKeyDown={(event) => handleChoiceKeyDown(event, index)}
                   disabled={disableInteraction || reveal}
-                  className={`group flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${tone}`}
+                  role="radio"
+                  aria-checked={isSelected}
+                  aria-disabled={disableInteraction || reveal}
+                  className={`group flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-[15px] font-medium leading-relaxed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 ${tone}`}
                 >
                   <Stack direction="row" align="center" className="gap-3">
                     {keyboardHints && (
@@ -190,6 +256,9 @@ export const QuizCard = memo(
 
         {feedback && (
           <div
+            id={feedbackId}
+            role="status"
+            aria-live="polite"
             className={`rounded-lg px-4 py-3 text-sm font-semibold ${
               status === 'correct'
                 ? 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200'

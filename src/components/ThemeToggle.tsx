@@ -10,7 +10,13 @@ export const ThemeToggle = () => {
   };
 
   return (
-    <Button variant="ghost" onClick={toggleTheme} aria-label={`現在: ${labels[theme]}`}>
+    <Button
+      variant="ghost"
+      onClick={toggleTheme}
+      aria-pressed={theme === 'dark'}
+      aria-label={`テーマを切り替え（現在: ${labels[theme]}）`}
+      title="テーマを切り替え"
+    >
       <span className="text-sm font-medium">{labels[theme]}</span>
     </Button>
   );

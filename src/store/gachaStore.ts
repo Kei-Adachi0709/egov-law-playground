@@ -157,10 +157,25 @@ const creator = (
   generateShareText: () => {
     const state = get();
     const latest = state.history.at(-1);
-    const categories = state.settings.categories.join(', ') || 'unset';
-    const keyword = state.settings.keyword || 'unset';
-    const title = latest?.title ?? 'no result';
-    return `Latest result: ${title} | Categories: ${categories} | Keyword: ${keyword}`;
+    if (!latest) {
+      return '法令ガチャで気になる条文を見つけました。#法令ガチャ';
+    }
+
+    const categories = state.settings.categories.length
+      ? `カテゴリ: ${state.settings.categories.join('、')}`
+      : 'カテゴリ指定なし';
+    const keyword = state.settings.keyword
+      ? `キーワード「${state.settings.keyword}」`
+      : 'キーワード指定なし';
+    const timestamp = new Date(latest.timestamp);
+    const timestampLabel = Number.isNaN(timestamp.getTime())
+      ? ''
+      : `（${new Intl.DateTimeFormat('ja-JP', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          }).format(timestamp)} 抽選）`;
+
+    return `法令ガチャで「${latest.title}」を引きました。${categories}／${keyword}${timestampLabel} #法令ガチャ`;
   }
 });
 

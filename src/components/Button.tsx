@@ -12,11 +12,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const prefersReducedMotion = useReducedMotion();
     const baseStyles =
-      'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+      'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-60';
     const variants: Record<'primary' | 'ghost', string> = {
-      primary: 'bg-primary text-primary-foreground hover:bg-blue-600 focus-visible:outline-primary',
+      primary:
+        'bg-primary text-primary-foreground shadow-sm hover:bg-blue-600 dark:hover:bg-blue-500/90 focus-visible:ring-primary',
       ghost:
-        'bg-transparent text-slate-900 hover:bg-slate-200/70 focus-visible:outline-slate-400 dark:text-slate-100 dark:hover:bg-slate-700/60'
+        'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-primary dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600 dark:hover:bg-slate-700/70'
     };
     const resolvedVariant = (variant ?? 'primary') as 'primary' | 'ghost';
     const composedClassName = [baseStyles, variants[resolvedVariant], className]
