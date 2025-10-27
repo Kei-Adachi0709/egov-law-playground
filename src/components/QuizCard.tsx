@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import type { QuizDifficulty, QuizQuestion } from '../types';
+import { Stack } from './Stack';
 
 export type QuizCardStatus = 'idle' | 'correct' | 'incorrect';
 
@@ -23,7 +24,7 @@ const difficultyStyles: Record<QuizDifficulty, string> = {
   hard: 'bg-amber-100 text-amber-700 dark:bg-amber-800/40 dark:text-amber-300'
 };
 
-const statusVariants = {
+const activeStatusVariants = {
   idle: { scale: 1, x: 0 },
   correct: { scale: [1, 1.05, 1], x: 0, transition: { duration: 0.45, ease: 'easeOut' } },
   incorrect: {
@@ -98,24 +99,31 @@ export const QuizCard = memo(
     const maskedSegments = useMemo(() => highlightMaskedText(question.maskedText), [question.maskedText]);
     const feedback = feedbackCopy(status, question);
     const appliedDifficulty = difficulty ?? question.metadata?.difficulty ?? 'normal';
+    const prefersReducedMotion = useReducedMotion();
+    const variants = prefersReducedMotion
+      ? { idle: { scale: 1, x: 0 }, correct: { scale: 1, x: 0 }, incorrect: { scale: 1, x: 0 } }
+      : activeStatusVariants;
+    const resolvedStatus = prefersReducedMotion ? 'idle' : status;
 
     return (
       <motion.article
         className="flex h-full flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900"
-        variants={statusVariants}
-        animate={status}
-        transition={{ type: 'spring', damping: 14, stiffness: 140 }}
+        variants={variants}
+        animate={resolvedStatus}
+        transition={
+          prefersReducedMotion ? undefined : { type: 'spring', damping: 16, stiffness: 220, mass: 0.8 }
+        }
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
+        <Stack direction="row" wrap align="start" justify="between" className="gap-3">
+          <Stack gap="1">
             {progressLabel && (
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 {progressLabel}
               </span>
             )}
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{question.prompt}</h2>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
+          </Stack>
+          <Stack direction="row" align="center" className="gap-2 text-xs">
             {question.metadata?.category && (
               <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600 dark:bg-slate-700/60 dark:text-slate-200">
                 {question.metadata.category}
@@ -124,8 +132,8 @@ export const QuizCard = memo(
             <span className={`rounded-full px-3 py-1 font-semibold ${difficultyStyles[appliedDifficulty]}`}>
               {appliedDifficulty === 'easy' ? '初級' : appliedDifficulty === 'hard' ? '上級' : '標準'}
             </span>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
 
         {maskedSegments.length > 0 ? (
           <p className="rounded-lg bg-slate-100/70 p-4 text-base leading-relaxed text-slate-800 dark:bg-slate-800/40 dark:text-slate-200">
@@ -160,14 +168,14 @@ export const QuizCard = memo(
                   disabled={disableInteraction || reveal}
                   className={`group flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${tone}`}
                 >
-                  <span className="flex items-center gap-3">
+                  <Stack direction="row" align="center" className="gap-3">
                     {keyboardHints && (
                       <span className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-300 text-xs font-semibold text-slate-500 shadow-inner dark:border-slate-600 dark:text-slate-300">
                         {KEY_HINTS[index]}
                       </span>
                     )}
                     <span>{choice}</span>
-                  </span>
+                  </Stack>
                   {reveal && index === question.answerIndex && (
                     <span className="text-sm font-bold text-emerald-600 dark:text-emerald-300">✔</span>
                   )}
@@ -199,7 +207,12 @@ export const QuizCard = memo(
         )}
 
         {question.metadata?.sourceUrl && (
-          <div className="flex items-center justify-between rounded-lg bg-slate-100/70 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/40 dark:text-slate-300">
+          <Stack
+            direction="row"
+            align="center"
+            justify="between"
+            className="rounded-lg bg-slate-100/70 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/40 dark:text-slate-300"
+          >
             <span>
               {question.metadata.lawName}
               {question.metadata.articleNumber ? `／${question.metadata.articleNumber}` : ''}
@@ -212,7 +225,7 @@ export const QuizCard = memo(
             >
               原文を開く
             </a>
-          </div>
+          </Stack>
         )}
       </motion.article>
     );
