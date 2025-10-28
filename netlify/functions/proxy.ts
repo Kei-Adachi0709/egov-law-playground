@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
 
-const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://www.e-gov.go.jp/elaws/api/v1/';
+const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://laws.e-gov.go.jp/api/2/';
 const allowedHosts = new Set<string>([new URL(DEFAULT_TARGET).host]);
 const proxyOrigin = process.env.PROXY_ORIGIN;
 

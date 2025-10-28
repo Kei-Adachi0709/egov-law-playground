@@ -83,9 +83,10 @@ describe('gachaStore', () => {
     });
 
     const shareText = generateShareText();
-    expect(shareText).toContain('Latest Law');
-    expect(shareText).toContain('administration, environment');
-    expect(shareText).toContain('climate');
+  expect(shareText).toContain('Latest Law');
+  expect(shareText).toContain('カテゴリ: administration、environment');
+  expect(shareText).toContain('キーワード「climate」');
+  expect(shareText).toContain('#法令ガチャ');
     } finally {
       unsubscribe();
     }

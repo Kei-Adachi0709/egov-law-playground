@@ -11,7 +11,7 @@ type HeaderMap = Record<string, string>;
 
 type JsonPayload = Record<string, unknown>;
 
-const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://www.e-gov.go.jp/elaws/api/v1/';
+const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://laws.e-gov.go.jp/api/2/';
 const ALLOWED_HOSTS = new Set<string>([new URL(DEFAULT_TARGET).host]);
 const RAW_EXTRA_HOSTS = process.env.EGOV_ALLOWED_PROXY_HOSTS ?? '';
 const PROXY_ORIGIN = process.env.PROXY_ORIGIN;

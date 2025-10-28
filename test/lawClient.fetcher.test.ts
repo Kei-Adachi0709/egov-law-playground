@@ -6,13 +6,14 @@ import type { LawClientConfig } from '../src/types/law';
 describe('lawClient', () => {
   const baseConfig: LawClientConfig = {
     baseUrl: 'https://api.example.com/',
+    useProxy: false,
     fetchImpl: async (input: RequestInfo | URL) => {
       const url = input.toString();
-      if (url.includes('/laws/search')) {
-        return createResponse(sampleSearchXml);
+      if (url.includes('/keyword')) {
+        return createResponse(sampleSearchJson);
       }
-      if (url.includes('/laws/TEST-LAW')) {
-        return createResponse(sampleDetailXml);
+      if (url.includes('/law_data/TEST-LAW')) {
+        return createResponse(sampleDetailJson);
       }
       return createResponse('Not Found', 404);
     }
@@ -23,7 +24,8 @@ describe('lawClient', () => {
     expect(result.results).toHaveLength(1);
     expect(result.results[0]).toMatchObject({
       lawId: 'TEST-LAW',
-      lawName: 'Test Law'
+      lawName: 'Test Law',
+      highlights: ['This law explains the purpose.', 'This law applies when the following conditions are met.']
     });
   });
 
@@ -31,23 +33,23 @@ describe('lawClient', () => {
     const detail = await getLawById('TEST-LAW', baseConfig);
     expect(detail.lawName).toBe('Test Law');
     expect(detail.provisions).toHaveLength(3);
-  expect(detail.articles[0].paragraphs[0].text.toLowerCase()).toContain('purpose');
+    expect(detail.articles[0].paragraphs[0].text.toLowerCase()).toContain('purpose');
   });
 
   it('picks a random provision deterministically via mocked random', async () => {
     const detail = await getLawById('TEST-LAW', baseConfig);
     const originalRandom = Math.random;
     Math.random = () => 0.5;
-    const provision = await pickRandomProvision(detail);
-    expect(provision.path).toContain('第2項');
+  const provision = await pickRandomProvision(detail);
+    expect(provision.path).toBe('第2条 第1項 第1号');
     Math.random = originalRandom;
   });
 
   it('extracts provisions matching a keyword', async () => {
     const detail = await getLawById('TEST-LAW', baseConfig);
-  const matches = extractProvisionsByKeyword(detail, 'condition');
-  expect(matches).toHaveLength(2);
-  expect(matches.every((match) => match.text.toLowerCase().includes('condition'))).toBe(true);
+    const matches = extractProvisionsByKeyword(detail, 'condition');
+    expect(matches).toHaveLength(2);
+    expect(matches.every((match) => match.text.toLowerCase().includes('condition'))).toBe(true);
   });
 
   it('retries and throws when response is not ok', async () => {
@@ -69,7 +71,7 @@ describe('lawClient', () => {
     const calls: Array<RequestInfo | URL> = [];
     const fetchSpy = async (input: RequestInfo | URL) => {
       calls.push(input);
-      return createResponse(sampleSearchXml);
+      return createResponse(sampleSearchJson);
     };
     await searchLaws(
       { keyword: 'proxy' },
@@ -84,69 +86,115 @@ describe('lawClient', () => {
     expect(calls.length).toBe(1);
     const calledUrl = calls[0].toString();
     expect(calledUrl).toMatch(/^https:\/\/proxy\.local/);
-    expect(decodeURIComponent(new URL(calledUrl).searchParams.get('target') ?? '')).toContain('/laws/search');
+    expect(decodeURIComponent(new URL(calledUrl).searchParams.get('target') ?? '')).toContain('/keyword');
   });
 });
 
-const sampleSearchXml = `<?xml version="1.0" encoding="UTF-8"?>
-<eGovLawSearchResult>
-  <result>
-    <status>0</status>
-    <message>OK</message>
-    <numberOfResults>1</numberOfResults>
-    <page>1</page>
-    <numberOfRecords>1</numberOfRecords>
-  </result>
-  <laws>
-    <law>
-      <lawId>TEST-LAW</lawId>
-      <lawName>Test Law</lawName>
-      <lawNo>Law No. 1</lawNo>
-      <promulgationDate>2020-01-01</promulgationDate>
-      <lawType>Act</lawType>
-    </law>
-  </laws>
-</eGovLawSearchResult>`;
+const sampleSearchJson = JSON.stringify({
+  total_count: 1,
+  sentence_count: 2,
+  next_offset: null,
+  items: [
+    {
+      law_info: {
+        law_type: 'Act',
+        law_id: 'TEST-LAW',
+        law_num: 'Law No. 1',
+        promulgation_date: '2020-01-01'
+      },
+      revision_info: {
+        law_title: 'Test Law',
+        category: '民事'
+      },
+      sentences: [
+        {
+          position: 'mainprovision',
+          text: 'This law explains the purpose.'
+        },
+        {
+          position: 'mainprovision',
+          text: 'This law applies when the following conditions are met.'
+        }
+      ]
+    }
+  ]
+});
 
-const sampleDetailXml = `<?xml version="1.0" encoding="UTF-8"?>
-<eGovLawDetail>
-  <law>
-    <lawId>TEST-LAW</lawId>
-    <lawName>Test Law</lawName>
-    <lawNo>Law No. 1</lawNo>
-    <promulgationDate>2020-01-01</promulgationDate>
-    <lawType>Act</lawType>
-    <lawBody>
-      <article>
-        <articleNumber>第1条</articleNumber>
-        <articleTitle>Purpose</articleTitle>
-        <paragraph>
-          <paragraphNumber>1</paragraphNumber>
-          <paragraphSentence>
-            <sentence>This law explains the purpose.</sentence>
-          </paragraphSentence>
-        </paragraph>
-        <paragraph>
-          <paragraphNumber>2</paragraphNumber>
-          <paragraphSentence>
-            <sentence>This law applies when the following conditions are met.</sentence>
-          </paragraphSentence>
-          <item>
-            <itemNumber>一</itemNumber>
-            <itemSentence>
-              <sentence>First condition is satisfied.</sentence>
-            </itemSentence>
-          </item>
-        </paragraph>
-      </article>
-    </lawBody>
-  </law>
-</eGovLawDetail>`;
+const sampleDetailJson = JSON.stringify({
+  law_info: {
+    law_id: 'TEST-LAW',
+    law_num: 'Law No. 1',
+    law_type: 'Act',
+    promulgation_date: '2020-01-01'
+  },
+  revision_info: {
+    law_title: 'Test Law'
+  },
+  law_full_text: {
+    tag: 'Law',
+    children: [
+      {
+        tag: 'LawBody',
+        children: [
+          {
+            tag: 'MainProvision',
+            children: [
+              {
+                tag: 'Article',
+                attr: { Num: '第1条' },
+                children: [
+                  { tag: 'ArticleTitle', children: ['第一条'] },
+                  {
+                    tag: 'Paragraph',
+                    attr: { Num: '1' },
+                    children: [
+                      {
+                        tag: 'ParagraphSentence',
+                        children: ['This law explains the purpose.']
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                tag: 'Article',
+                attr: { Num: '第2条' },
+                children: [
+                  { tag: 'ArticleTitle', children: ['第二条'] },
+                  {
+                    tag: 'Paragraph',
+                    attr: { Num: '1' },
+                    children: [
+                      {
+                        tag: 'ParagraphSentence',
+                        children: ['This law applies when the following conditions are met.']
+                      },
+                      {
+                        tag: 'Item',
+                        attr: { Num: '1' },
+                        children: [
+                          {
+                            tag: 'ItemSentence',
+                            children: ['First condition is satisfied.']
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+});
 
 const createResponse = (body: string, status = 200): Response =>
   new Response(body, {
     status,
     headers: {
-      'Content-Type': 'application/xml'
+      'Content-Type': 'application/json'
     }
   });

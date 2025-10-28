@@ -52,8 +52,8 @@
 `.env` で以下を設定します。
 
 ```
-VITE_EGOV_LAW_API_BASE_URL=https://www.e-gov.go.jp/elaws/api/v1/
-VITE_API_BASE_URL=https://www.e-gov.go.jp/elaws/api/v1/
+VITE_EGOV_LAW_API_BASE_URL=https://laws.e-gov.go.jp/api/2/
+VITE_API_BASE_URL=https://laws.e-gov.go.jp/api/2/
 VITE_USE_PROXY=true
 VITE_PROXY_BASE_URL=/api/proxy?target=
 PROXY_ORIGIN=

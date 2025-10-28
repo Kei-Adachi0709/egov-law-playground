@@ -8,6 +8,7 @@ export interface SearchParams {
   enforcementDateFrom?: string;
   enforcementDateTo?: string;
   lawCategory?: string;
+  categoryCodes?: string[];
   lawType?: string;
   articleNumber?: string;
   paragraphNumber?: string;

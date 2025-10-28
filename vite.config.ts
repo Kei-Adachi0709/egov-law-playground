@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 
-const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://www.e-gov.go.jp/elaws/api/v1/';
+const DEFAULT_TARGET = process.env.VITE_EGOV_LAW_API_BASE_URL ?? 'https://laws.e-gov.go.jp/api/2/';
 const ALLOWED_HOSTS = new Set([new URL(DEFAULT_TARGET).host]);
 
 const readRequestBody = async (req: IncomingMessage): Promise<Uint8Array | undefined> => {
